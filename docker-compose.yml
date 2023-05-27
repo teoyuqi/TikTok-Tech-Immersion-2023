@@ -2,15 +2,18 @@ version: '3.9'
 services:
   rpc-server:
     build: rpc-server
+    restart: always
     ports:
       - "8888:8888"
     environment:
       - SERVICE_NAME=rpc-server
       - SERVICE_TAGS=rpc
     depends_on:
+      - db
       - etcd
   http-server:
     build: http-server
+    restart: always
     ports:
       - "8080:8080"
     environment:
@@ -24,3 +27,21 @@ services:
     command: ["etcd", "--advertise-client-urls", "http://etcd:2379", "--listen-client-urls", "http://0.0.0.0:2379"]
     ports:
       - "2379:2379"
+  db:
+    image: mysql:5.7
+    restart: always
+    container_name: DockerDB
+    environment:
+      MYSQL_DATABASE: 'db'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      # <Port exposed> : <MySQL Port running inside container>
+      - '3306:3306'
+    volumes:
+      # Where our data will be persisted
+      - my-db:/var/lib/mysql
+# Names our volume
+volumes:
+  my-db:

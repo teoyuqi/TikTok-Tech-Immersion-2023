@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/TikTokTechImmersion/assignment_demo_2023/http-server/kitex_gen/rpc"
@@ -10,6 +11,7 @@ import (
 	"github.com/TikTokTechImmersion/assignment_demo_2023/http-server/proto_gen/api"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	"github.com/cloudwego/kitex/client"
@@ -42,41 +44,48 @@ func main() {
 }
 
 func sendMessage(ctx context.Context, c *app.RequestContext) {
-	var req api.SendRequest
-	err := c.Bind(&req)
-	if err != nil {
-		c.String(consts.StatusBadRequest, "Failed to parse request body: %v", err)
-		return
-	}
+	//var req api.SendRequest
+	//err := c.Bind(&req)
+	//if err != nil {
+	//	c.String(consts.StatusBadRequest, "Failed to parse request body: %v", err)
+	//	return
+	//}
 	resp, err := cli.Send(ctx, &rpc.SendRequest{
 		Message: &rpc.Message{
-			Chat:   req.Chat,
-			Text:   req.Text,
-			Sender: req.Sender,
+			Chat:     c.Query("chat"),
+			Text:     c.Query("text"),
+			Sender:   c.Query("sender"),
+			SendTime: time.Now().Unix(),
 		},
 	})
 	if err != nil {
 		c.String(consts.StatusInternalServerError, err.Error())
-	} else if resp.Code != 0 {
-		c.String(consts.StatusInternalServerError, resp.Msg)
 	} else {
-		c.Status(consts.StatusOK)
+		c.String(consts.StatusInternalServerError, resp.Msg)
 	}
 }
 
 func pullMessage(ctx context.Context, c *app.RequestContext) {
-	var req api.PullRequest
-	err := c.Bind(&req)
+	//var req api.PullRequest
+	//err := c.Bind(&req)
+	cursor, err := strconv.Atoi(c.Query("cursor"))
 	if err != nil {
 		c.String(consts.StatusBadRequest, "Failed to parse request body: %v", err)
 		return
 	}
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil {
+		c.String(consts.StatusBadRequest, "Failed to parse request body: %v", err)
+		return
+	}
+	reverse := c.Query("reverse") == "true"
+
 
 	resp, err := cli.Pull(ctx, &rpc.PullRequest{
-		Chat:    req.Chat,
-		Cursor:  req.Cursor,
-		Limit:   req.Limit,
-		Reverse: &req.Reverse,
+		Chat:    c.Query("chat"),
+		Cursor:  int64(cursor),
+		Limit:   int32(limit),
+		Reverse: &reverse,
 	})
 	if err != nil {
 		c.String(consts.StatusInternalServerError, err.Error())
@@ -87,6 +96,7 @@ func pullMessage(ctx context.Context, c *app.RequestContext) {
 	}
 	messages := make([]*api.Message, 0, len(resp.Messages))
 	for _, msg := range resp.Messages {
+		hlog.Debug(msg)
 		messages = append(messages, &api.Message{
 			Chat:     msg.Chat,
 			Text:     msg.Text,

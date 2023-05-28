@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"math/rand"
 
 	"github.com/TikTokTechImmersion/assignment_demo_2023/rpc-server/kitex_gen/rpc"
 	"gorm.io/gorm"
@@ -20,21 +19,15 @@ func (s *IMServiceImpl) Send(ctx context.Context, req *rpc.SendRequest) (*rpc.Se
 	log.Println(newMessage.Text)
 	resp := rpc.NewSendResponse()
 	resp.Code = 0
-	resp.Msg = newMessage.Text
+	resp.Msg = "Received: " + newMessage.Text + "\n"
 	return resp, nil
 }
 
 func (s *IMServiceImpl) Pull(ctx context.Context, req *rpc.PullRequest) (*rpc.PullResponse, error) {
 	resp := rpc.NewPullResponse()
-	resp.Code = 1
-	s.db.First(&resp.Msg)
+	resp.Code = 0
+	s.db.Where("chat = ?", req.Chat).Where("send_time > ?",
+		req.Cursor).Limit(int(req.Limit)).Find(&resp.Messages)
+	log.Println(resp.Messages)
 	return resp, nil
-}
-
-func areYouLucky() (int32, string) {
-	if rand.Int31n(2) == 1 {
-		return 0, "success"
-	} else {
-		return 500, "oops"
-	}
 }

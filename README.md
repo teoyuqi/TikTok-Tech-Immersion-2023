@@ -39,7 +39,7 @@ curl -X POST 'localhost:8080/api/send?chat=a:b&sender=a&text=hi'
 
 ### 2.2 Pulling messages
 To send a message, we send a `GET` request to
-`localhost:8080/api/send`, specifying the following URL
+`localhost:8080/api/pull`, specifying the following URL
 parameters:
 * `chat`: Name of chat in the form `[USER A]:[USER B]`
 * `cursor`: Earliest epoch time of messages to retrieve, 0 by default

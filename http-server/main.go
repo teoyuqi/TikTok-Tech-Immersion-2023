@@ -44,12 +44,6 @@ func main() {
 }
 
 func sendMessage(ctx context.Context, c *app.RequestContext) {
-	//var req api.SendRequest
-	//err := c.Bind(&req)
-	//if err != nil {
-	//	c.String(consts.StatusBadRequest, "Failed to parse request body: %v", err)
-	//	return
-	//}
 	resp, err := cli.Send(ctx, &rpc.SendRequest{
 		Message: &rpc.Message{
 			Chat:     c.Query("chat"),
@@ -66,18 +60,32 @@ func sendMessage(ctx context.Context, c *app.RequestContext) {
 }
 
 func pullMessage(ctx context.Context, c *app.RequestContext) {
-	//var req api.PullRequest
-	//err := c.Bind(&req)
-	cursor, err := strconv.Atoi(c.Query("cursor"))
-	if err != nil {
-		c.String(consts.StatusBadRequest, "Failed to parse request body: %v", err)
-		return
+	var cursor int
+	var cursorErr error
+	if c.Query("cursor") == "" {
+		cursor = 0
+	} else {
+		cursor, cursorErr = strconv.Atoi(c.Query("cursor"))
+		if cursorErr != nil {
+			c.String(consts.StatusBadRequest,
+				"Failed to parse cursor param request body: %v", cursorErr)
+			return
+		}
 	}
-	limit, err := strconv.Atoi(c.Query("limit"))
-	if err != nil {
-		c.String(consts.StatusBadRequest, "Failed to parse request body: %v", err)
-		return
+
+	var limit int
+	var limitErr error
+	if c.Query("limit") == "" {
+		limit = 10
+	} else {
+		limit, limitErr = strconv.Atoi(c.Query("limit"))
+		if limitErr != nil {
+			c.String(consts.StatusBadRequest,
+				"Failed to parse limit param in request body: %v", limitErr)
+			return
+		}
 	}
+
 	reverse := c.Query("reverse") == "true"
 
 
